@@ -8,6 +8,12 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket = "dev-terraform-tools"
+    key    = "envs/dev/alex/7_frontend.tfstate"
+    region = "us-east-1" # must match the bucket region; override at init if needed
+  }
 }
 
 provider "aws" {
@@ -21,17 +27,21 @@ data "aws_region" "current" {}
 
 # Reference Part 5 Database resources
 data "terraform_remote_state" "database" {
-  backend = "local"
+  backend = "s3"
   config = {
-    path = "../5_database/terraform.tfstate"
+    bucket = "dev-terraform-tools"
+    key    = "envs/dev/alex/5_database.tfstate"
+    region = "us-east-1"
   }
 }
 
 # Reference Part 6 Agents resources
 data "terraform_remote_state" "agents" {
-  backend = "local"
+  backend = "s3"
   config = {
-    path = "../6_agents/terraform.tfstate"
+    bucket = "dev-terraform-tools"
+    key    = "envs/dev/alex/6_agents.tfstate"
+    region = "us-east-1"
   }
 }
 
@@ -39,9 +49,9 @@ locals {
   name_prefix = "alex"
 
   common_tags = {
-    Project     = "alex"
-    Part        = "7_frontend"
-    ManagedBy   = "terraform"
+    Project   = "alex"
+    Part      = "7_frontend"
+    ManagedBy = "terraform"
   }
 }
 
@@ -238,10 +248,10 @@ resource "aws_apigatewayv2_api" "main" {
   tags          = local.common_tags
 
   cors_configuration {
-    allow_credentials = false  # Cannot be true when allow_origins is "*"
+    allow_credentials = false # Cannot be true when allow_origins is "*"
     allow_headers     = ["authorization", "content-type", "x-amz-date", "x-api-key", "x-amz-security-token"]
     allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_origins     = ["*"]  # CORS is handled in Lambda via environment variables
+    allow_origins     = ["*"] # CORS is handled in Lambda via environment variables
     max_age           = 300
   }
 }

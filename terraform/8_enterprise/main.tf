@@ -8,6 +8,12 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket = "dev-terraform-tools"
+    key    = "envs/dev/alex/8_enterprise.tfstate"
+    region = "us-east-1" # must match the bucket region; override at init if needed
+  }
 }
 
 provider "aws" {

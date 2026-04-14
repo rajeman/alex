@@ -1,15 +1,18 @@
 terraform {
   required_version = ">= 1.5"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.70"
     }
   }
-  
-  # Using local backend - state will be stored in terraform.tfstate in this directory
-  # This is automatically gitignored for security
+
+  backend "s3" {
+    bucket = "dev-terraform-tools"
+    key    = "envs/dev/alex/2_sagemaker.tfstate"
+    region = "us-east-1" # must match the bucket region; override at init if needed
+  }
 }
 
 provider "aws" {
@@ -64,10 +67,10 @@ resource "aws_sagemaker_endpoint_configuration" "serverless_config" {
 
   production_variants {
     model_name = aws_sagemaker_model.embedding_model.name
-    
+
     serverless_config {
       memory_size_in_mb = 3072
-      max_concurrency   = 2  # Reduced from 10 to avoid quota limit
+      max_concurrency   = 2 # Reduced from 10 to avoid quota limit
     }
   }
 }
@@ -77,7 +80,7 @@ resource "time_sleep" "wait_for_iam_propagation" {
   depends_on = [
     aws_iam_role_policy_attachment.sagemaker_full_access
   ]
-  
+
   create_duration = "15s"
 }
 
@@ -85,9 +88,9 @@ resource "time_sleep" "wait_for_iam_propagation" {
 resource "aws_sagemaker_endpoint" "embedding_endpoint" {
   name                 = "alex-embedding-endpoint"
   endpoint_config_name = aws_sagemaker_endpoint_configuration.serverless_config.name
-  
+
   depends_on = [
     time_sleep.wait_for_iam_propagation
   ]
-  
+
 }
