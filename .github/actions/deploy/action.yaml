@@ -102,12 +102,11 @@ runs:
       shell: bash
       env:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ inputs.next_public_clerk_publishable_key }}
-        NODE_ENV: production
       run: |
         set -euo pipefail
         cd frontend
         npm ci
-        npm run build
+        NODE_ENV=production npm run build
 
     - name: "deploy · S3 sync"
       shell: bash
