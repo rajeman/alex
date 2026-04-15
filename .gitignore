@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -144,6 +143,9 @@ celerybeat.pid
 # Terraform variables (contain secrets)
 *.tfvars
 !*.tfvars.example
+
+# Optional local override with real GitHub secret values (template: .github.env)
+.github.env.local
 .venv
 env/
 venv/

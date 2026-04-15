@@ -1,0 +1,112 @@
+name: Build
+description: |
+  Package all agent and API Lambda zips (Docker + uv), Terraform fmt check,
+  and terraform init/validate for terraform/6_agents and terraform/7_frontend.
+  Uploads lambda-packages artifact for the deploy job.
+
+inputs:
+  aws-access-key-id:
+    description: AWS access key ID (Terraform S3 backend + validation).
+    required: true
+  aws-secret-access-key:
+    description: AWS secret access key.
+    required: true
+  aws-region:
+    description: AWS region for the provider and S3 backend.
+    required: true
+  tf_var_aws_region:
+    description: Value for TF_VAR_aws_region.
+    required: true
+  tf_var_aurora_cluster_arn:
+    description: Value for TF_VAR_aurora_cluster_arn.
+    required: true
+  tf_var_aurora_secret_arn:
+    description: Value for TF_VAR_aurora_secret_arn.
+    required: true
+  tf_var_vector_bucket:
+    description: Value for TF_VAR_vector_bucket.
+    required: true
+  tf_var_polygon_api_key:
+    description: Value for TF_VAR_polygon_api_key.
+    required: true
+  tf_var_openai_api_key:
+    description: Value for TF_VAR_openai_api_key.
+    required: true
+  tf_var_clerk_jwks_url:
+    description: Value for TF_VAR_clerk_jwks_url (needed for 7_frontend validate after init).
+    required: true
+  tf_var_clerk_issuer:
+    description: Value for TF_VAR_clerk_issuer.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: "build · terraform"
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.9.0"
+        terraform_wrapper: false
+
+    - name: "build · aws credentials"
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws-region }}
+        mask-aws-account-id: true
+
+    - name: "build · uv"
+      uses: astral-sh/setup-uv@v5
+
+    - name: "build · Lambda zips (package_docker.py)"
+      shell: bash
+      run: |
+        set -euo pipefail
+        for name in planner tagger reporter charter retirement api; do
+          echo "::group::backend/${name}"
+          (cd "backend/${name}" && uv sync && uv run package_docker.py)
+          echo "::endgroup::"
+        done
+
+    - name: "build · terraform fmt"
+      shell: bash
+      run: terraform fmt -check -recursive terraform
+
+    - name: "build · terraform init & validate (6_agents)"
+      shell: bash
+      env:
+        TF_VAR_aws_region: ${{ inputs.tf_var_aws_region }}
+        TF_VAR_aurora_cluster_arn: ${{ inputs.tf_var_aurora_cluster_arn }}
+        TF_VAR_aurora_secret_arn: ${{ inputs.tf_var_aurora_secret_arn }}
+        TF_VAR_vector_bucket: ${{ inputs.tf_var_vector_bucket }}
+        TF_VAR_polygon_api_key: ${{ inputs.tf_var_polygon_api_key }}
+        TF_VAR_openai_api_key: ${{ inputs.tf_var_openai_api_key }}
+      run: |
+        set -euo pipefail
+        terraform -chdir=terraform/6_agents init -input=false
+        terraform -chdir=terraform/6_agents validate
+
+    - name: "build · terraform init & validate (7_frontend)"
+      shell: bash
+      env:
+        TF_VAR_aws_region: ${{ inputs.tf_var_aws_region }}
+        TF_VAR_clerk_jwks_url: ${{ inputs.tf_var_clerk_jwks_url }}
+        TF_VAR_clerk_issuer: ${{ inputs.tf_var_clerk_issuer }}
+      run: |
+        set -euo pipefail
+        terraform -chdir=terraform/7_frontend init -input=false
+        terraform -chdir=terraform/7_frontend validate
+
+    - name: "build · upload Lambda zips artifact"
+      uses: actions/upload-artifact@v4
+      with:
+        name: lambda-packages
+        path: |
+          backend/planner/planner_lambda.zip
+          backend/tagger/tagger_lambda.zip
+          backend/reporter/reporter_lambda.zip
+          backend/charter/charter_lambda.zip
+          backend/retirement/retirement_lambda.zip
+          backend/api/api_lambda.zip
+        if-no-files-found: error

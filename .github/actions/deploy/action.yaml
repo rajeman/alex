@@ -1,0 +1,124 @@
+name: Deploy
+description: |
+  Terraform apply (6_agents, 7_frontend), Next.js production build, S3 sync, CloudFront invalidation.
+  Expects Lambda zip artifacts at backend/*/*_lambda.zip (e.g. from the build job).
+
+inputs:
+  aws-access-key-id:
+    description: AWS access key ID.
+    required: true
+  aws-secret-access-key:
+    description: AWS secret access key.
+    required: true
+  aws-region:
+    description: AWS region.
+    required: true
+  tf_var_aws_region:
+    description: Value for TF_VAR_aws_region.
+    required: true
+  tf_var_aurora_cluster_arn:
+    description: Value for TF_VAR_aurora_cluster_arn.
+    required: true
+  tf_var_aurora_secret_arn:
+    description: Value for TF_VAR_aurora_secret_arn.
+    required: true
+  tf_var_vector_bucket:
+    description: Value for TF_VAR_vector_bucket.
+    required: true
+  tf_var_polygon_api_key:
+    description: Value for TF_VAR_polygon_api_key.
+    required: true
+  tf_var_openai_api_key:
+    description: Value for TF_VAR_openai_api_key.
+    required: true
+  tf_var_clerk_jwks_url:
+    description: Value for TF_VAR_clerk_jwks_url.
+    required: true
+  tf_var_clerk_issuer:
+    description: Value for TF_VAR_clerk_issuer.
+    required: true
+  next_public_clerk_publishable_key:
+    description: Value for NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY during frontend build.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: "deploy · terraform"
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.9.0"
+        terraform_wrapper: false
+
+    - name: "deploy · aws credentials"
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws-region }}
+        mask-aws-account-id: true
+
+    - name: "deploy · terraform apply (6_agents)"
+      shell: bash
+      env:
+        TF_VAR_aws_region: ${{ inputs.tf_var_aws_region }}
+        TF_VAR_aurora_cluster_arn: ${{ inputs.tf_var_aurora_cluster_arn }}
+        TF_VAR_aurora_secret_arn: ${{ inputs.tf_var_aurora_secret_arn }}
+        TF_VAR_vector_bucket: ${{ inputs.tf_var_vector_bucket }}
+        TF_VAR_polygon_api_key: ${{ inputs.tf_var_polygon_api_key }}
+        TF_VAR_openai_api_key: ${{ inputs.tf_var_openai_api_key }}
+      run: |
+        set -euo pipefail
+        terraform -chdir=terraform/6_agents init -input=false
+        terraform -chdir=terraform/6_agents apply -auto-approve -input=false
+
+    - name: "deploy · terraform apply (7_frontend)"
+      shell: bash
+      env:
+        TF_VAR_aws_region: ${{ inputs.tf_var_aws_region }}
+        TF_VAR_clerk_jwks_url: ${{ inputs.tf_var_clerk_jwks_url }}
+        TF_VAR_clerk_issuer: ${{ inputs.tf_var_clerk_issuer }}
+      run: |
+        set -euo pipefail
+        terraform -chdir=terraform/7_frontend init -input=false
+        terraform -chdir=terraform/7_frontend apply -auto-approve -input=false
+
+    - name: "deploy · terraform outputs → GITHUB_ENV"
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "NEXT_PUBLIC_API_URL=$(terraform -chdir=terraform/7_frontend output -raw api_gateway_url)" >> "$GITHUB_ENV"
+        echo "S3_BUCKET=$(terraform -chdir=terraform/7_frontend output -raw s3_bucket_name)" >> "$GITHUB_ENV"
+        echo "CF_DIST_ID=$(terraform -chdir=terraform/7_frontend output -raw cloudfront_distribution_id)" >> "$GITHUB_ENV"
+
+    - name: "deploy · setup Node.js"
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: npm
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: "deploy · frontend build"
+      shell: bash
+      env:
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ inputs.next_public_clerk_publishable_key }}
+        NODE_ENV: production
+      run: |
+        set -euo pipefail
+        cd frontend
+        npm ci
+        npm run build
+
+    - name: "deploy · S3 sync"
+      shell: bash
+      run: |
+        set -euo pipefail
+        aws s3 sync frontend/out/ "s3://${S3_BUCKET}/" --delete
+
+    - name: "deploy · CloudFront invalidation"
+      shell: bash
+      run: |
+        set -euo pipefail
+        aws cloudfront create-invalidation \
+          --distribution-id "${CF_DIST_ID}" \
+          --paths "/*"

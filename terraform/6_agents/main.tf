@@ -22,6 +22,11 @@ provider "aws" {
 # Data source for current caller identity
 data "aws_caller_identity" "current" {}
 
+locals {
+  # Wildcard matches the Part 5 secret name pattern if tfvars ARN drifts from the real secret.
+  aurora_secret_arn_wildcard = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:alex-aurora-credentials-*"
+}
+
 # ========================================
 # SQS Queue for Async Job Processing
 # ========================================
@@ -128,13 +133,17 @@ resource "aws_iam_role_policy" "lambda_agents_policy" {
         ]
         Resource = var.aurora_cluster_arn
       },
-      # Secrets Manager for database credentials
+      # Secrets Manager for database credentials (RDS Data API fetches the secret)
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue"
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
         ]
-        Resource = var.aurora_secret_arn
+        Resource = [
+          var.aurora_secret_arn,
+          local.aurora_secret_arn_wildcard
+        ]
       },
       # S3 Vectors access for all agents
       {
