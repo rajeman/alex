@@ -59,16 +59,20 @@ def package_lambda():
         # Use Docker to install dependencies for Lambda's architecture
         # The --no-emit-project excludes the current project from requirements
         # We still need to manually install the database package
-        docker_cmd = [
-            "docker", "run", "--rm",
-            "--platform", "linux/amd64",
-            "-v", f"{temp_path}:/build",
-            "-v", f"{backend_dir}/database:/database",
-            "--entrypoint", "/bin/bash",
-            "public.ecr.aws/lambda/python:3.12",
-            "-c",
-            """cd /build && pip install --target ./package -r requirements.txt && pip install --target ./package --no-deps /database"""
-        ]
+        docker_cmd = ["docker", "run", "--rm"]
+        if hasattr(os, "getuid"):
+            docker_cmd.extend(["--user", f"{os.getuid()}:{os.getgid()}"])
+        docker_cmd.extend(
+            [
+                "--platform", "linux/amd64",
+                "-v", f"{temp_path}:/build",
+                "-v", f"{backend_dir}/database:/database",
+                "--entrypoint", "/bin/bash",
+                "public.ecr.aws/lambda/python:3.12",
+                "-c",
+                """cd /build && pip install --target ./package -r requirements.txt && pip install --target ./package --no-deps /database""",
+            ]
+        )
         
         run_command(docker_cmd)
         
