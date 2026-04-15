@@ -2,7 +2,7 @@ name: Build
 description: |
   Package all agent and API Lambda zips (Docker + uv), Terraform fmt check,
   and terraform init/validate for terraform/6_agents and terraform/7_frontend.
-  Uploads lambda-packages artifact for the deploy job.
+  Optionally uploads lambda-packages (e.g. for PR runs when deploy is not in the same job).
 
 inputs:
   aws-access-key-id:
@@ -38,6 +38,10 @@ inputs:
   tf_var_clerk_issuer:
     description: Value for TF_VAR_clerk_issuer.
     required: true
+  upload_lambda_artifact:
+    description: Upload lambda-packages artifact (set false when deploy runs in the same job).
+    required: false
+    default: "true"
 
 runs:
   using: composite
@@ -95,6 +99,7 @@ runs:
         terraform -chdir=terraform/7_frontend validate
 
     - name: "build · upload Lambda zips artifact"
+      if: inputs.upload_lambda_artifact == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: lambda-packages

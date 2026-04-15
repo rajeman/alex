@@ -1,4 +1,5 @@
 # Build (package Lambdas, Terraform fmt/validate) and deploy (Terraform apply, frontend, S3, CloudFront).
+# Single job so Lambda zips stay on the runner for deploy (no artifact upload/download).
 # Database migrations / seeding are not included.
 #
 # Secrets: see /.github.env
@@ -19,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     env:
       DEFAULT_AWS_REGION: ${{ secrets.DEFAULT_AWS_REGION }}
@@ -43,26 +44,10 @@ jobs:
           tf_var_openai_api_key: ${{ secrets.TF_VAR_OPENAI_API_KEY }}
           tf_var_clerk_jwks_url: ${{ secrets.TF_VAR_CLERK_JWKS_URL }}
           tf_var_clerk_issuer: ${{ secrets.TF_VAR_CLERK_ISSUER }}
-
-  deploy:
-    runs-on: ubuntu-latest
-    env:
-      DEFAULT_AWS_REGION: ${{ secrets.DEFAULT_AWS_REGION }}
-    needs: build
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    permissions:
-      contents: read
-    steps:
-      - name: Clone the repository
-        uses: actions/checkout@v4
-
-      - name: Download Lambda zips
-        uses: actions/download-artifact@v4
-        with:
-          name: lambda-packages
-          path: .
+          upload_lambda_artifact: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
 
       - name: Deploy (Terraform apply, frontend, S3, CloudFront)
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: ./.github/actions/deploy
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
