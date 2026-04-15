@@ -13,9 +13,6 @@ inputs:
   aws-region:
     description: AWS region (same as DEFAULT_AWS_REGION in the workflow).
     required: true
-  tf_var_aws_region:
-    description: Value for TF_VAR_aws_region.
-    required: true
   tf_var_aurora_cluster_arn:
     description: Value for TF_VAR_aurora_cluster_arn.
     required: true
@@ -61,7 +58,6 @@ runs:
     - name: "deploy · terraform apply (6_agents)"
       shell: bash
       env:
-        TF_VAR_aws_region: ${{ inputs.tf_var_aws_region }}
         TF_VAR_aurora_cluster_arn: ${{ inputs.tf_var_aurora_cluster_arn }}
         TF_VAR_aurora_secret_arn: ${{ inputs.tf_var_aurora_secret_arn }}
         TF_VAR_vector_bucket: ${{ inputs.tf_var_vector_bucket }}
@@ -75,7 +71,6 @@ runs:
     - name: "deploy · terraform apply (7_frontend)"
       shell: bash
       env:
-        TF_VAR_aws_region: ${{ inputs.tf_var_aws_region }}
         TF_VAR_clerk_jwks_url: ${{ inputs.tf_var_clerk_jwks_url }}
         TF_VAR_clerk_issuer: ${{ inputs.tf_var_clerk_issuer }}
       run: |
