@@ -23,11 +23,6 @@ load_dotenv(override=True)
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Get configuration
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
-BEDROCK_REGION = os.getenv("BEDROCK_REGION", "us-west-2")
-
-
 class AllocationBreakdown(BaseModel):
     """Allocation percentages that must sum to 100"""
 
@@ -171,14 +166,7 @@ async def classify_instrument(
         Complete classification with allocations
     """
     try:
-        # Initialize the model
-        model_id = BEDROCK_MODEL_ID
-
-        # Set region for LiteLLM Bedrock calls
-        bedrock_region = os.getenv("BEDROCK_REGION", "us-west-2")
-        os.environ["AWS_REGION_NAME"] = bedrock_region
-
-        model = LitellmModel(model=f"bedrock/{model_id}")
+        model = LitellmModel(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
 
         # Create the classification task
         task = CLASSIFICATION_PROMPT.format(

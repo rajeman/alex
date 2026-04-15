@@ -61,7 +61,8 @@ Some Terraform configurations require environment variables from your `.env` fil
 - `AURORA_CLUSTER_ARN` - Aurora cluster ARN (from Part 5)
 - `AURORA_SECRET_ARN` - Secrets Manager ARN (from Part 5)
 - `VECTOR_BUCKET` - S3 Vectors bucket name (from Part 3)
-- `BEDROCK_MODEL_ID` - Bedrock model to use (Part 6)
+- `OPENAI_MODEL` - OpenAI model for agents (Part 6), e.g. `gpt-4o-mini`
+- `openai_api_key` (Part 6 `terraform.tfvars`) - required; becomes `OPENAI_API_KEY` on every agent Lambda. You can also `export TF_VAR_openai_api_key=sk-...` instead of storing the key in a file.
 
 ## State Management
 

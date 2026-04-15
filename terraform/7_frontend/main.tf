@@ -12,7 +12,7 @@ terraform {
   backend "s3" {
     bucket = "dev-terraform-tools"
     key    = "envs/dev/alex/7_frontend.tfstate"
-    region = "us-east-1" # must match the bucket region; override at init if needed
+    region = "eu-west-1" # must match the bucket region; override at init if needed
   }
 }
 
@@ -31,7 +31,7 @@ data "terraform_remote_state" "database" {
   config = {
     bucket = "dev-terraform-tools"
     key    = "envs/dev/alex/5_database.tfstate"
-    region = "us-east-1"
+    region = "eu-west-1"
   }
 }
 
@@ -41,7 +41,7 @@ data "terraform_remote_state" "agents" {
   config = {
     bucket = "dev-terraform-tools"
     key    = "envs/dev/alex/6_agents.tfstate"
-    region = "us-east-1"
+    region = "eu-west-1"
   }
 }
 
@@ -53,6 +53,11 @@ locals {
     Part      = "7_frontend"
     ManagedBy = "terraform"
   }
+
+  # Aurora secret from Part 5 remote state (exact ARN). Wildcard covers name drift if state/env
+  # was updated manually while IAM still matched an older ARN.
+  aurora_secret_arn          = data.terraform_remote_state.database.outputs.aurora_secret_arn
+  aurora_secret_arn_wildcard = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:alex-aurora-credentials-*"
 }
 
 # S3 bucket for frontend static website
@@ -148,9 +153,13 @@ resource "aws_iam_role_policy" "api_lambda_aurora" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue"
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
         ]
-        Resource = data.terraform_remote_state.database.outputs.aurora_secret_arn
+        Resource = [
+          local.aurora_secret_arn,
+          local.aurora_secret_arn_wildcard
+        ]
       }
     ]
   })

@@ -21,7 +21,7 @@ output "lambda_functions" {
 
 output "setup_instructions" {
   description = "Instructions for testing the agents"
-  value = <<-EOT
+  value       = <<-EOT
     
     ✅ Agent infrastructure deployed successfully!
     
@@ -53,7 +53,6 @@ output "setup_instructions" {
        - /aws/lambda/alex-charter
        - /aws/lambda/alex-retirement
     
-    Bedrock Model: ${var.bedrock_model_id}
-    Region: ${var.bedrock_region}
+    OpenAI model: ${var.openai_model}
   EOT
 }

@@ -11,7 +11,7 @@ terraform {
   backend "s3" {
     bucket = "dev-terraform-tools"
     key    = "envs/dev/alex/3_ingestion.tfstate"
-    region = "us-east-1" # must match the bucket region; override at init if needed
+    region = "eu-west-1" # must match the bucket region; override at init if needed
   }
 }
 

@@ -11,7 +11,7 @@ terraform {
   backend "s3" {
     bucket = "dev-terraform-tools"
     key    = "envs/dev/alex/4_researcher.tfstate"
-    region = "us-east-1" # must match the bucket region; override at init if needed
+    region = "eu-west-1" # must match the bucket region; override at init if needed
   }
 }
 
@@ -105,27 +105,6 @@ resource "aws_iam_role" "app_runner_instance_role" {
   }
 }
 
-# Policy for App Runner instance to access Bedrock
-resource "aws_iam_role_policy" "app_runner_instance_bedrock_access" {
-  name = "alex-app-runner-instance-bedrock-policy"
-  role = aws_iam_role.app_runner_instance_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "bedrock:InvokeModel",
-          "bedrock:InvokeModelWithResponseStream",
-          "bedrock:ListFoundationModels"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
 # App Runner service
 resource "aws_apprunner_service" "researcher" {
   service_name = "alex-researcher"
@@ -144,6 +123,7 @@ resource "aws_apprunner_service" "researcher" {
         port = "8000"
         runtime_environment_variables = {
           OPENAI_API_KEY    = var.openai_api_key
+          OPENAI_MODEL      = var.openai_model
           ALEX_API_ENDPOINT = var.alex_api_endpoint
           ALEX_API_KEY      = var.alex_api_key
         }

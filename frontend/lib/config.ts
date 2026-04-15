@@ -7,8 +7,9 @@ export const getApiUrl = () => {
     if (window.location.hostname === 'localhost') {
       return 'http://localhost:8000';
     } else {
+
       // Production: use relative path (CloudFront handles routing /api/* to API Gateway)
-      return '';
+      return process.env.NEXT_PUBLIC_API_URL;
     }
   }
   // Server-side during build

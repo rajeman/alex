@@ -11,7 +11,7 @@ terraform {
   backend "s3" {
     bucket = "dev-terraform-tools"
     key    = "envs/dev/alex/6_agents.tfstate"
-    region = "us-east-1" # must match the bucket region; override at init if needed
+    region = "eu-west-1" # must match the bucket region; override at init if needed
   }
 }
 
@@ -165,19 +165,6 @@ resource "aws_iam_role_policy" "lambda_agents_policy" {
         ]
         Resource = "arn:aws:sagemaker:${var.aws_region}:${data.aws_caller_identity.current.account_id}:endpoint/${var.sagemaker_endpoint}"
       },
-      # Bedrock access for all agents
-      {
-        Effect = "Allow"
-        Action = [
-          "bedrock:InvokeModel",
-          "bedrock:InvokeModelWithResponseStream"
-        ]
-        # Replaced ${var.bedrock_region} with * for Bedrock region workaround
-        Resource = [
-          "arn:aws:bedrock:*::foundation-model/*",
-          "arn:aws:bedrock:*:*:inference-profile/*"
-        ]
-      }
     ]
   })
 }
@@ -243,8 +230,7 @@ resource "aws_lambda_function" "planner" {
       AURORA_SECRET_ARN  = var.aurora_secret_arn
       DATABASE_NAME      = "alex"
       VECTOR_BUCKET      = var.vector_bucket
-      BEDROCK_MODEL_ID   = var.bedrock_model_id
-      BEDROCK_REGION     = var.bedrock_region
+      OPENAI_MODEL       = var.openai_model
       DEFAULT_AWS_REGION = var.aws_region
       SAGEMAKER_ENDPOINT = var.sagemaker_endpoint
       POLYGON_API_KEY    = var.polygon_api_key
@@ -293,8 +279,7 @@ resource "aws_lambda_function" "tagger" {
       AURORA_CLUSTER_ARN = var.aurora_cluster_arn
       AURORA_SECRET_ARN  = var.aurora_secret_arn
       DATABASE_NAME      = "alex"
-      BEDROCK_MODEL_ID   = var.bedrock_model_id
-      BEDROCK_REGION     = var.bedrock_region
+      OPENAI_MODEL       = var.openai_model
       DEFAULT_AWS_REGION = var.aws_region
       # LangFuse observability (optional)
       LANGFUSE_PUBLIC_KEY = var.langfuse_public_key
@@ -333,8 +318,7 @@ resource "aws_lambda_function" "reporter" {
       AURORA_CLUSTER_ARN = var.aurora_cluster_arn
       AURORA_SECRET_ARN  = var.aurora_secret_arn
       DATABASE_NAME      = "alex"
-      BEDROCK_MODEL_ID   = var.bedrock_model_id
-      BEDROCK_REGION     = var.bedrock_region
+      OPENAI_MODEL       = var.openai_model
       DEFAULT_AWS_REGION = var.aws_region
       SAGEMAKER_ENDPOINT = var.sagemaker_endpoint
       # LangFuse observability (optional)
@@ -374,8 +358,7 @@ resource "aws_lambda_function" "charter" {
       AURORA_CLUSTER_ARN = var.aurora_cluster_arn
       AURORA_SECRET_ARN  = var.aurora_secret_arn
       DATABASE_NAME      = "alex"
-      BEDROCK_MODEL_ID   = var.bedrock_model_id
-      BEDROCK_REGION     = var.bedrock_region
+      OPENAI_MODEL       = var.openai_model
       DEFAULT_AWS_REGION = var.aws_region
       # LangFuse observability (optional)
       LANGFUSE_PUBLIC_KEY = var.langfuse_public_key
@@ -414,8 +397,7 @@ resource "aws_lambda_function" "retirement" {
       AURORA_CLUSTER_ARN = var.aurora_cluster_arn
       AURORA_SECRET_ARN  = var.aurora_secret_arn
       DATABASE_NAME      = "alex"
-      BEDROCK_MODEL_ID   = var.bedrock_model_id
-      BEDROCK_REGION     = var.bedrock_region
+      OPENAI_MODEL       = var.openai_model
       DEFAULT_AWS_REGION = var.aws_region
       # LangFuse observability (optional)
       LANGFUSE_PUBLIC_KEY = var.langfuse_public_key

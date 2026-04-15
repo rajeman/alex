@@ -57,8 +57,7 @@ def main():
     region = boto3.Session().region_name
     print(f"AWS Account: {account_id}")
     print(f"AWS Region: {region}")
-    print(f"Bedrock Region: {os.getenv('BEDROCK_REGION', 'us-west-2')}")
-    print(f"Bedrock Model: {os.getenv('BEDROCK_MODEL_ID', 'Not set')}")
+    print(f"OpenAI Model: {os.getenv('OPENAI_MODEL', 'gpt-4o-mini')}")
     print()
     
     # Check for test user

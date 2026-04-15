@@ -16,7 +16,7 @@ output "dashboard_names" {
 
 output "setup_instructions" {
   description = "Instructions for using the dashboards"
-  value = <<-EOT
+  value       = <<-EOT
 
     ✅ CloudWatch Dashboards deployed successfully!
 
@@ -36,9 +36,6 @@ output "setup_instructions" {
     Dashboard Features:
 
     AI Model Usage Dashboard:
-    - Bedrock model invocations and errors
-    - Token usage (input/output) tracking
-    - Model response latency metrics
     - SageMaker endpoint invocations
     - SageMaker model latency
     - Endpoint resource utilization (CPU/Memory)

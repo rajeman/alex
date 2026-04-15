@@ -1,16 +1,19 @@
 variable "aws_region" {
   description = "AWS region for resources"
   type        = string
+  default     = "eu-west-1"
 }
 
 variable "aurora_cluster_arn" {
   description = "ARN of the Aurora cluster from Part 5"
   type        = string
+  sensitive   = true
 }
 
 variable "aurora_secret_arn" {
   description = "ARN of the Secrets Manager secret from Part 5"
   type        = string
+  sensitive   = true
 }
 
 variable "vector_bucket" {
@@ -18,14 +21,10 @@ variable "vector_bucket" {
   type        = string
 }
 
-variable "bedrock_model_id" {
-  description = "Bedrock model ID to use for agents"
+variable "openai_model" {
+  description = "OpenAI model name for LiteLLM (e.g. gpt-4o-mini)"
   type        = string
-}
-
-variable "bedrock_region" {
-  description = "AWS region for Bedrock"
-  type        = string
+  default     = "gpt-4o-mini"
 }
 
 variable "sagemaker_endpoint" {
@@ -66,10 +65,9 @@ variable "langfuse_host" {
   default     = "https://us.cloud.langfuse.com"
 }
 
-# OpenAI API key for tracing (required for OpenAI Agents SDK tracing)
+# OpenAI API key for LLM calls and OpenAI Agents SDK tracing
 variable "openai_api_key" {
-  description = "OpenAI API key for enabling tracing in OpenAI Agents SDK"
+  description = "OpenAI API key; injected into every agent Lambda as OPENAI_API_KEY (LiteLLM / OpenAI API)"
   type        = string
-  default     = ""
   sensitive   = true
 }
