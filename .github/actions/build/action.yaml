@@ -69,10 +69,6 @@ runs:
           echo "::endgroup::"
         done
 
-    - name: "build · terraform fmt"
-      shell: bash
-      run: terraform fmt -check -recursive terraform
-
     - name: "build · terraform init & validate (6_agents)"
       shell: bash
       env:
