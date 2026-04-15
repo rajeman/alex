@@ -11,7 +11,7 @@ inputs:
     description: AWS secret access key.
     required: true
   aws-region:
-    description: AWS region.
+    description: AWS region (same as DEFAULT_AWS_REGION in the workflow).
     required: true
   tf_var_aws_region:
     description: Value for TF_VAR_aws_region.

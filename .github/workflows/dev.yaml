@@ -21,6 +21,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DEFAULT_AWS_REGION: ${{ secrets.DEFAULT_AWS_REGION }}
     permissions:
       contents: read
     steps:
@@ -32,7 +34,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.DEFAULT_AWS_REGION }}
           tf_var_aws_region: ${{ secrets.TF_VAR_AWS_REGION }}
           tf_var_aurora_cluster_arn: ${{ secrets.TF_VAR_AURORA_CLUSTER_ARN }}
           tf_var_aurora_secret_arn: ${{ secrets.TF_VAR_AURORA_SECRET_ARN }}
@@ -44,6 +46,8 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DEFAULT_AWS_REGION: ${{ secrets.DEFAULT_AWS_REGION }}
     needs: build
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
@@ -63,7 +67,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.DEFAULT_AWS_REGION }}
           tf_var_aws_region: ${{ secrets.TF_VAR_AWS_REGION }}
           tf_var_aurora_cluster_arn: ${{ secrets.TF_VAR_AURORA_CLUSTER_ARN }}
           tf_var_aurora_secret_arn: ${{ secrets.TF_VAR_AURORA_SECRET_ARN }}
